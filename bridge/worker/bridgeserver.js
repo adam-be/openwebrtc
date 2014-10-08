@@ -147,7 +147,7 @@ function RenderController(audioRenderer, videoRenderer) {
     };
 }
 
-var owr_js = "(function () {\n" + wbjsonrpc_js + domutils_js + sdp_js + webrtc_js + "\n})();";
+var owr_js = "(function () {\n" + owr.getClientScripts() + "\n})();";
 
 server.onrequest = function (event) {
     var response = {"headers": {}};

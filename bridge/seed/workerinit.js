@@ -42,3 +42,25 @@ if (!worker_global.ArrayBuffer || !worker_global.Uint8Array) {
     worker_global.ArrayBuffer = ArrayBuffer;
     worker_global.Uint8Array = Uint8Array;
 }
+worker_global.owr.getClientScripts = function () {
+    var paths = [ "client/sdp.js", "shared/wbjsonrpc.js",
+        "client/domutils.js", "client/webrtc.js" ];
+    var scriptString = "";
+
+    paths.forEach(function (path) {
+        scriptString += readFileSync("bridge/" + path);
+    });
+    return scriptString;
+};
+
+function readFileSync(path)
+{
+    var gio = imports.gi.Gio;
+    var file = gio.file_new_for_path(path);
+    var fileStream = file.read();
+    var dataStream = new gio.DataInputStream.c_new(fileStream);
+    var content = dataStream.read_until("", 0);
+
+    fileStream.close();
+    return content;
+}

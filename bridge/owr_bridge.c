@@ -320,6 +320,7 @@ static gpointer run(GAsyncQueue *msg_queue)
     gint argc = 2;
     gchar *args[] = {"seed", "" /* "--seed-debug=initialization,finalization"*/};
     gchar **argv = args;
+    gchar *current_dir, *script_path;
 
     gchar *script_names[] = {
         "workerutils.js",
@@ -387,7 +388,12 @@ static gpointer run(GAsyncQueue *msg_queue)
 
     owr_init_with_main_context(g_main_context_default());
     engine = seed_init(&argc, &argv);
-    seed_engine_set_search_path(engine, "");
+
+    current_dir = g_get_current_dir();
+    script_path = g_build_path("/", current_dir, "bridge", NULL);
+    g_free(current_dir);
+    seed_engine_set_search_path(engine, script_path);
+    g_free(script_path);
     worker_context = seed_context_create(engine->group, NULL);
     seed_object_set_property(engine->context, seed_context_get_global_object(engine->context),
         "worker_global",  seed_context_get_global_object(worker_context));
@@ -401,19 +407,26 @@ static gpointer run(GAsyncQueue *msg_queue)
     evaluate_script(engine->context, "imports.searchPath = [\".\"];" \
         "imports.extensions = {\"GLib\": {}};", 0, "init script");
 
-    for (i = 0; scripts[i]; i++) {
-        exception = evaluate_script(engine->context, (gchar *)scripts[i], script_lengths[i],
-            script_names[i]);
-        if (exception)
-            print_exception(engine->context, exception);
-    }
+    (void)script_lengths;
+    (void)worker_script_lengths;
+    (void)script_names;
+    exception = evaluate_script(engine->context,
+        "Seed.include(\"seed/workerutils.js\");"\
+        "Seed.include(\"seed/websocket.js\");" \
+        "Seed.include(\"seed/workerinit.js\");" \
+        "worker_global.include = Seed.include;"
+        , 0, "seed context init");
+    if (exception)
+        print_exception(engine->context, exception);
 
-    for (i = 0; worker_scripts[i]; i++) {
-        exception = evaluate_script(worker_context, (gchar *)worker_scripts[i],
-            worker_script_lengths[i], worker_script_names[i]);
-        if (exception)
-            print_exception(worker_context, exception);
-    }
+    (void)worker_script_names;
+    exception = evaluate_script(worker_context,
+        "include(\"shared/wbjsonrpc.js\");"\
+        "include(\"worker/peerhandler.js\");" \
+        "include(\"worker/bridgeserver.js\");"
+        , 0, "worker context init");
+    if (exception)
+        print_exception(worker_context, exception);
 
     if (msg_queue)
         g_idle_add((GSourceFunc)bridge_ready_callback, msg_queue);

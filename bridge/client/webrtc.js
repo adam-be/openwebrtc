@@ -102,7 +102,13 @@
     var bridge = new JsonRpc(messageChannel);
     bridge.importFunctions("createPeerHandler", "requestSources", "renderSources");
 
-    function getUserMedia(options, successCallback, errorCallback) {
+    function getUserMedia(options) {
+        checkArguments("getUserMedia", "object", 1, arguments);
+
+        return internalGetUserMedia(options);
+    }
+
+    function legacyGetUserMedia(options, successCallback, errorCallback) {
         checkArguments("getUserMedia", "object, function, function", 3, arguments);
 
         internalGetUserMedia(options).then(successCallback).catch(errorCallback);
@@ -1338,7 +1344,11 @@
     global.webkitRTCPeerConnection = RTCPeerConnection;
     global.RTCSessionDescription = RTCSessionDescription;
     global.RTCIceCandidate = RTCIceCandidate;
-    global.navigator.webkitGetUserMedia = getUserMedia;
+    global.navigator.webkitGetUserMedia = legacyGetUserMedia;
+    if (!global.navigator.mediaDevices)
+        global.navigator.mediaDevices = {};
+    global.navigator.mediaDevices.webkitGetUserMedia = getUserMedia;
+
 
     var url = global.webkitURL || global.URL;
     if (!url)

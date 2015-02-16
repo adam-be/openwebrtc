@@ -17,6 +17,7 @@ lib_LTLIBRARIES = libopenwebrtc_jni.la libopenwebrtc_bridge_jni.la
 
 libopenwebrtc_jni_la_SOURCES = owr_jni.c
 libopenwebrtc_jni_la_LIBADD = \
+	-L$(ANDROID_NDK_PREFIX)/lib -landroid \
 	$(top_builddir)/owr/libopenwebrtc.la
 
 libopenwebrtc_bridge_jni_la_SOURCES = owr_bridge_jni.c
